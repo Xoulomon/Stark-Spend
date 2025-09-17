@@ -1,0 +1,20 @@
+{
+  "name": "stark-spend",
+  "version": "1.0.0",
+  "description": "A modular, responsive React web application for off-ramping stablecoins (USDT, USDC, ETH, DAI) from the Starknet ecosystem to fiat currencies using LayerSwap and Paycrest APIs.",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "viem": "^2.37.6"
+  }
+}
