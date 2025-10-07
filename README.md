@@ -1,14 +1,17 @@
 # StarkSpend
 
-A modular, responsive React web application for off-ramping stablecoins (USDT, USDC, ETH, DAI) from the Starknet ecosystem to fiat currencies.
+A modular, responsive React web application for off-ramping stablecoins (USDT, USDC, ETH, DAI) from the Starknet ecosystem to fiat currencies using LayerSwap and Paycrest APIs.
 
 ## Features
 
-- **Wallet Integration**: Connect Starknet wallets (Argent X, Braavos) using Starknet.js
+- **Wallet Integration**: Connect Starknet wallets (Argent X, Braavos, Argent Mobile) using @starknet-react/core
+- **Network Support**: Support for both Starknet Mainnet and Sepolia testnet
 - **Multi-Asset Support**: Support for USDC, USDT, DAI, and ETH
 - **Fiat Currency Support**: Multiple African currencies (NGN, KES, TZS, UGX, GHS)
 - **Bank Integration**: Automatic bank institution fetching and account verification
-- **Real-time Rates**: Live exchange rates and payout calculations
+- **Real-time Rates**: Live exchange rates and payout calculations using Paycrest
+- **Balance Display**: Real-time token balance display for connected wallets
+- **Modular Architecture**: Clean separation of components, hooks, and utilities
 
 ## Architecture
 
@@ -21,7 +24,7 @@ A modular, responsive React web application for off-ramping stablecoins (USDT, U
 ### API Integration
 - **LayerSwap API**: Bridges assets from Starknet to Base network
 - **Paycrest API**: Handles fiat off-ramping and bank transfers
-- **Starknet.js**: Wallet connection and blockchain interactions
+- **@starknet-react/core**: Wallet connection and blockchain interactions
 - **Viem**: Base network transaction signing
 
 ## Setup Instructions
@@ -40,19 +43,33 @@ BASE_PRIVATE_KEY=your_base_private_key_here
 - **Paycrest API Key**: Get from [Paycrest Dashboard](https://paycrest.io)
 - **Base Private Key**: Your Base network wallet private key (store securely)
 
-### 3. Running the Application
-Simply open `index.html` in a modern web browser. The application uses CDN links for all dependencies.
+### 3. Installation
+```bash
+npm install
+```
+
+### 4. Running the Application
+```bash
+# Start the backend API server
+npm start
+
+# In another terminal, start the frontend development server
+npm run dev
+```
+
+The application will be available at `http://localhost:5173` with the API server running on port 3000.
 
 ## Usage Flow
 
-1. **Connect Wallet**: Click "Connect Starknet Wallet" and approve the connection
-2. **Select Stablecoin**: Choose from USDC, USDT, DAI, or ETH
-3. **Choose Fiat Currency**: Select your target currency (NGN, KES, etc.)
-4. **Select Bank**: Choose your bank institution from the dropdown
-5. **Enter Account Details**: Input your account number (auto-verification at 10+ characters)
-6. **Enter Trade Amount**: Specify amount in crypto or fiat
-7. **Review Payout**: Check the estimated fiat payout amount
-8. **Initiate Trade**: Click "Initiate Trade" to execute the transaction
+1. **Select Network**: Choose between Starknet Mainnet or Sepolia testnet
+2. **Connect Wallet**: Click "Connect" on your preferred Starknet wallet (Argent X, Braavos, Argent Mobile, etc.)
+3. **Select Stablecoin**: Choose from USDC, USDT, DAI, or ETH (balance will be displayed)
+4. **Choose Fiat Currency**: Select your target currency (NGN, KES, etc.)
+5. **Select Bank**: Choose your bank institution from the dropdown
+6. **Enter Account Details**: Input your account number (auto-verification at 10+ characters)
+7. **Enter Trade Amount**: Specify amount in crypto or fiat using the toggle
+8. **Review Payout**: Check the estimated fiat payout amount calculated via Paycrest
+9. **Initiate Trade**: Click "Initiate Trade" to execute the transaction (Starknet → Base → Fiat)
 
 ## Security Considerations
 
@@ -62,18 +79,27 @@ Simply open `index.html` in a modern web browser. The application uses CDN links
 - **Rate Limiting**: Implement rate limiting for API calls
 - **Input Validation**: Validate all user inputs before processing
 
-## API Endpoints Used
+## API Endpoints
+
+### Backend API Endpoints
+- `GET /api/tokens` - Get supported stablecoins
+- `GET /api/networks` - Get supported Starknet networks
+- `GET /api/rates/:currency` - Get exchange rates for all tokens
 
 ### LayerSwap API
-- `POST /api/v2/swaps` - Create bridge transaction
-- `GET /api/v2/swaps/{id}` - Get swap details and call_data
+- `POST /api/layerswap/swaps` - Create bridge transaction
+- `GET /api/layerswap/swaps/{id}` - Get swap details and call_data
 
 ### Paycrest API
-- `GET /v1/currencies` - Get supported fiat currencies
-- `GET /v1/institutions/{currency}` - Get bank institutions
-- `POST /v1/verify-account` - Verify bank account details
-- `GET /v1/rates/{token}/{amount}/{currency}` - Get exchange rates
-- `POST /v1/sender/orders` - Create payment order
+- `GET /api/paycrest/currencies` - Get supported fiat currencies
+- `GET /api/paycrest/institutions/{currency}` - Get bank institutions
+- `POST /api/paycrest/verify-account` - Verify bank account details
+- `GET /api/paycrest/rates/{token}/{amount}/{currency}` - Get exchange rates
+- `POST /api/paycrest/sender/orders` - Create payment order
+
+### Base Operations
+- `GET /api/base/balance/{token}` - Get Base network token balance
+- `POST /api/complete-base-trade` - Complete the fiat off-ramp transaction
 
 ## Error Handling
 

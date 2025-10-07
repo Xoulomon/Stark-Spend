@@ -11,7 +11,6 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
-app.use(express.static('.')); // Serve index.html and other static files
 
 const PORT = process.env.PORT || 3000;
 
@@ -19,7 +18,9 @@ const PORT = process.env.PORT || 3000;
 const LAYERSWAP_BASE_URL = 'https://api.layerswap.io/api/v2';
 const PAYCREST_BASE_URL = 'https://api.paycrest.io/v1';
 const BASE_ADDRESS = '0xb39b7c02372dBBb003c05D6b4ABA2eC68842934D';
-const SOURCE_NETWORK = 'STARKNET_MAINNET';
+
+// Dynamic network configuration
+const getSourceNetwork = (network) => network === 'sepolia' ? 'STARKNET_SEPOLIA' : 'STARKNET_MAINNET';
 const DESTINATION_NETWORK = 'BASE_MAINNET';
 
 const BASE_TOKEN_INFO = {
@@ -120,9 +121,18 @@ const sendOnBase = async (token, amount, recipient) => {
 // LayerSwap
 app.post('/api/layerswap/swaps', async (req, res) => {
   try {
+    const network = req.body.network || 'mainnet';
+    const sourceNetwork = getSourceNetwork(network);
+
+    const swapData = {
+      ...req.body,
+      source_network: sourceNetwork,
+      destination_network: DESTINATION_NETWORK
+    };
+
     const response = await axios.post(
       `${LAYERSWAP_BASE_URL}/swaps`,
-      req.body,
+      swapData,
       { headers: { 'X-LS-APIKEY': process.env.LAYERSWAP_API_KEY, 'Content-Type': 'application/json' } }
     );
     res.json(response.data);
@@ -282,6 +292,65 @@ app.post('/api/complete-base-trade', async (req, res) => {
   } catch (error) {
     const errMsg = handleApiError(error, 'Failed to complete trade');
     res.status(500).json({ error: errMsg });
+  }
+});
+
+// Get supported tokens
+app.get('/api/tokens', (req, res) => {
+  const tokens = [
+    { symbol: 'USDC', name: 'USD Coin', decimals: 6, contract: CONSTANTS.STABLECOIN_CONTRACTS.USDC },
+    { symbol: 'USDT', name: 'Tether', decimals: 6, contract: CONSTANTS.STABLECOIN_CONTRACTS.USDT },
+    { symbol: 'DAI', name: 'Dai', decimals: 18, contract: CONSTANTS.STABLECOIN_CONTRACTS.DAI },
+    { symbol: 'ETH', name: 'Ethereum', decimals: 18, contract: CONSTANTS.STABLECOIN_CONTRACTS.ETH }
+  ];
+  res.json({ tokens });
+});
+
+// Get supported networks
+app.get('/api/networks', (req, res) => {
+  const networks = {
+    mainnet: {
+      id: 'mainnet',
+      name: 'Mainnet',
+      chainId: '0x534e5f4d41494e',
+      rpcUrl: 'https://starknet-mainnet.public.blastapi.io'
+    },
+    sepolia: {
+      id: 'sepolia',
+      name: 'Sepolia',
+      chainId: '0x534e5f5345504f4c4941',
+      rpcUrl: 'https://starknet-sepolia.public.blastapi.io'
+    }
+  };
+  res.json({ networks });
+});
+
+// Get exchange rates for all supported tokens
+app.get('/api/rates/:currency', async (req, res) => {
+  const { currency } = req.params;
+  const network = req.query.network || 'base';
+
+  try {
+    const rates = {};
+    const tokens = ['USDC', 'USDT', 'DAI', 'ETH'];
+
+    for (const token of tokens) {
+      try {
+        const response = await axios.get(
+          `${PAYCREST_BASE_URL}/rates/${token}/1/${currency}?network=${network}`,
+          { headers: { 'API-Key': process.env.PAYCREST_API_KEY } }
+        );
+        rates[token] = response.data.data;
+      } catch (err) {
+        console.error(`Failed to get rate for ${token}:`, err.message);
+        rates[token] = null;
+      }
+    }
+
+    res.json({ rates, currency, network });
+  } catch (error) {
+    const errMsg = handleApiError(error, 'Failed to fetch rates');
+    res.status(error.response?.status || 500).json({ error: errMsg });
   }
 });
 
